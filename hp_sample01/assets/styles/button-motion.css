@@ -1,0 +1,320 @@
+/*
+ * ボタン操作アニメーション機構
+ * 設計書: docs/設計書20260929.md
+ *
+ * レイヤー: Tokens → Base → Variant → State → Motion → Accessibility
+ */
+
+/* ========== Tokens ========== */
+:root {
+  --motion-accent: #c1272d;
+  --motion-accent-rgb: 193, 39, 45;
+  --motion-on-accent: #fff;
+  --motion-text: #2b2b2b;
+  --motion-focus: #1f3a5c;
+
+  /* burst 演出で使うアクセント色（2〜3色） */
+  --motion-particle-1: #c1272d;
+  --motion-particle-2: #f2a900;
+  --motion-particle-3: #ff7a3d;
+
+  --motion-fast: 120ms;
+  --motion-normal: 300ms;
+  --motion-enter: 600ms;
+  --motion-stagger: 120ms;
+  --motion-pulse: 2.2s;
+  --motion-ease-out-back: cubic-bezier(.34, 1.56, .64, 1);
+
+  --motion-radius: 999px;
+  --motion-shadow: 0 4px 12px rgba(0, 0, 0, .14);
+  --motion-shadow-hover: 0 12px 26px rgba(0, 0, 0, .22);
+  --motion-shadow-weak: 0 2px 6px rgba(0, 0, 0, .08);
+}
+
+/* ========== Base ========== */
+.motion-btn {
+  --motion-shine: rgba(255, 255, 255, .45);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5em;
+  box-sizing: border-box;
+  min-width: 44px;
+  min-height: 44px;
+  padding: .75em 1.75em;
+  border: 2px solid transparent;
+  border-radius: var(--motion-radius);
+  font: inherit;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: .04em;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  box-shadow: var(--motion-shadow);
+  transform: none;
+  transition:
+    transform var(--motion-normal) var(--motion-ease-out-back),
+    box-shadow var(--motion-normal) ease,
+    background-color var(--motion-normal) ease,
+    border-color var(--motion-normal) ease,
+    color var(--motion-normal) ease,
+    filter var(--motion-fast) ease,
+    opacity var(--motion-normal) ease;
+}
+
+/* ホバー光沢（装飾のみ。クリック判定を妨げない） */
+.motion-btn::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  z-index: -1;
+  width: 40%;
+  background: linear-gradient(100deg, transparent, var(--motion-shine), transparent);
+  transform: translateX(-130%) skewX(-20deg);
+  pointer-events: none;
+}
+
+/* ========== Variant ========== */
+.motion-btn--primary {
+  background-color: var(--motion-accent);
+  border-color: var(--motion-accent);
+  color: var(--motion-on-accent);
+}
+
+.motion-btn--secondary {
+  --motion-shine: rgba(var(--motion-accent-rgb), .18);
+  background-color: transparent;
+  border-color: var(--motion-accent);
+  color: var(--motion-accent);
+  box-shadow: var(--motion-shadow-weak);
+}
+
+.motion-btn--quiet {
+  --motion-shine: rgba(var(--motion-accent-rgb), .14);
+  background-color: transparent;
+  color: var(--motion-text);
+  box-shadow: none;
+}
+
+/* ========== State: hover（精密ポインターのみ） ========== */
+@media (hover: hover) and (pointer: fine) {
+  .motion-btn:hover {
+    transform: translateY(-4px) scale(1.045);
+    box-shadow: var(--motion-shadow-hover);
+  }
+
+  .motion-btn--quiet:hover {
+    background-color: rgba(var(--motion-accent-rgb), .08);
+    box-shadow: var(--motion-shadow-weak);
+  }
+
+  .motion-btn:hover::after {
+    transform: translateX(290%) skewX(-20deg);
+    transition: transform var(--motion-enter) ease;
+  }
+
+  /* ホバー中は発光を止め、ホバーの影を優先する */
+  .motion-btn.is-pulse-ready:hover {
+    animation: none;
+  }
+}
+
+/* ========== State: pressed ========== */
+.motion-btn:active {
+  transform: translateY(-1px) scale(.98);
+  box-shadow: var(--motion-shadow);
+  filter: brightness(.94);
+  transition-duration: var(--motion-fast);
+}
+
+.motion-btn--quiet:active {
+  box-shadow: none;
+}
+
+/* ========== State: focus ========== */
+.motion-btn:focus-visible {
+  outline: 2px solid var(--motion-focus);
+  outline-offset: 3px;
+}
+
+/* ========== Motion: pulse（Primary、登場完了後のみ） ========== */
+.motion-btn--primary.is-pulse-ready {
+  animation: motion-pulse var(--motion-pulse) ease-out infinite;
+}
+
+@keyframes motion-pulse {
+  0% {
+    box-shadow: var(--motion-shadow), 0 0 0 0 rgba(var(--motion-accent-rgb), .55);
+  }
+  70%,
+  100% {
+    box-shadow: var(--motion-shadow), 0 0 0 12px rgba(var(--motion-accent-rgb), 0);
+  }
+}
+
+/* ========== Motion: enter ========== */
+/* .motion-js は JS 読み込み時のみ付与される。JS 無効時は常に表示される。 */
+.motion-js [data-motion-group] > .motion-btn:not(.is-entered) {
+  opacity: 0;
+}
+
+.motion-js [data-motion-group] > .motion-btn.is-entered:not(.is-enter-done) {
+  animation: motion-enter var(--motion-enter) var(--motion-ease-out-back) backwards;
+  animation-delay: calc(var(--motion-index, 0) * var(--motion-stagger));
+}
+
+@keyframes motion-enter {
+  0% {
+    opacity: 0;
+    transform: scale(.6) translateY(10px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.06) translateY(0);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* ========== State: disabled ========== */
+.motion-btn:disabled,
+.motion-btn[aria-disabled="true"] {
+  opacity: .5;
+  cursor: not-allowed;
+  box-shadow: none;
+  transform: none;
+  filter: none;
+  animation: none;
+}
+
+.motion-btn:disabled::after,
+.motion-btn[aria-disabled="true"]::after {
+  display: none;
+}
+
+/* ========== State: loading ========== */
+.motion-btn.is-loading {
+  opacity: .85;
+  cursor: progress;
+  animation: none;
+}
+
+.motion-btn.is-loading::before {
+  content: "";
+  flex: none;
+  box-sizing: border-box;
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: motion-spin .8s linear infinite;
+}
+
+@keyframes motion-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========== Motion: burst particle ========== */
+.motion-particle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: var(--size, 5px);
+  height: var(--size, 5px);
+  border-radius: 50%;
+  background: var(--color, var(--motion-accent));
+  pointer-events: none;
+  will-change: transform, opacity;
+  transform: translate(var(--x), var(--y)) translate(-50%, -50%);
+  animation: motion-particle var(--duration, 600ms) cubic-bezier(.2, .7, .3, 1) forwards;
+}
+
+@keyframes motion-particle {
+  0% {
+    opacity: 1;
+    transform: translate(var(--x), var(--y)) translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(calc(var(--x) + var(--dx)), calc(var(--y) + var(--dy)))
+      translate(-50%, -50%)
+      scale(.3);
+  }
+}
+
+/* ========== Motion: fireworks ========== */
+.motion-fireworks {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 9999;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+}
+
+/* ========== Accessibility: reduced motion ========== */
+@media (prefers-reduced-motion: reduce) {
+  .motion-btn,
+  .motion-btn::before,
+  .motion-btn::after,
+  .motion-particle {
+    animation: none !important;
+    transition-duration: .01ms !important;
+  }
+
+  /* 移動・拡大は止め、色・影・フォーカスリングで状態差を維持する */
+  .motion-btn {
+    transform: none !important;
+  }
+
+  .motion-btn::after,
+  .motion-particle,
+  .motion-fireworks {
+    display: none;
+  }
+
+  .motion-js [data-motion-group] > .motion-btn:not(.is-entered) {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ========== Accessibility: forced colors ========== */
+@media (forced-colors: active) {
+  .motion-btn {
+    border-color: ButtonText;
+  }
+
+  .motion-btn::after,
+  .motion-particle,
+  .motion-fireworks {
+    display: none;
+  }
+
+  .motion-btn:focus-visible {
+    outline-color: Highlight;
+  }
+
+  .motion-btn:disabled,
+  .motion-btn[aria-disabled="true"] {
+    opacity: 1;
+    color: GrayText;
+    border-color: GrayText;
+  }
+}

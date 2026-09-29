@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ボタン操作アニメーション</title>
+  <link rel="stylesheet" href="assets/styles/button-motion.css">
+  <!-- 登場前の非表示を JS 有効時だけ適用するため、head で同期読み込みする -->
+  <script src="assets/scripts/button-motion.js"></script>
+  <style>
+    :root {
+      --page-bg: #fbf7f0;
+      --page-surface: #fff;
+      --page-text: #2b2b2b;
+      --page-muted: #666;
+      --page-line: #e8dfd2;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      background: var(--page-bg);
+      color: var(--page-text);
+      font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", "Yu Gothic UI", sans-serif;
+      line-height: 1.7;
+    }
+
+    main {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 0 16px 96px;
+    }
+
+    .hero {
+      display: grid;
+      min-height: 88vh;
+      place-content: center;
+      text-align: center;
+    }
+
+    .hero h1 {
+      margin: 0 0 .5em;
+      font-size: clamp(1.8rem, 6vw, 3rem);
+      line-height: 1.3;
+    }
+
+    .hero p {
+      margin: 0 auto 2.5em;
+      max-width: 36em;
+      color: var(--page-muted);
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 16px;
+      justify-content: center;
+      align-items: center;
+    }
+
+    section.panel {
+      margin-top: 48px;
+      padding: 32px 24px;
+      background: var(--page-surface);
+      border: 1px solid var(--page-line);
+      border-radius: 16px;
+    }
+
+    section.panel h2 {
+      margin: 0 0 .25em;
+      font-size: 1.35rem;
+    }
+
+    section.panel > p {
+      margin: 0 0 1.5em;
+      color: var(--page-muted);
+    }
+
+    .status {
+      min-height: 1.7em;
+      margin: 1em 0 0;
+      text-align: center;
+      font-weight: 700;
+    }
+
+    footer {
+      padding: 24px 16px 48px;
+      text-align: center;
+      color: var(--page-muted);
+      font-size: .875rem;
+    }
+
+    @media (max-width: 480px) {
+      .actions .motion-btn {
+        width: 100%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header class="hero">
+      <h1>押したくなるボタン</h1>
+      <p>ホバーで浮き上がって光が走り、押すと沈みます。主要ボタンだけが控えめに発光します。</p>
+      <div class="actions" data-motion-group>
+        <a class="motion-btn motion-btn--primary" href="#variants">詳細を見る</a>
+        <a class="motion-btn motion-btn--secondary" href="#states">状態を確認する</a>
+        <a class="motion-btn motion-btn--quiet" href="#burst">クリック演出へ</a>
+      </div>
+    </header>
+
+    <section class="panel" id="variants" aria-labelledby="variants-title">
+      <h2 id="variants-title">ボタン種別</h2>
+      <p>スクロールして表示領域に入ったときに、1回だけ順番に登場します。</p>
+      <div class="actions" data-motion-group>
+        <button class="motion-btn motion-btn--primary" type="button" data-motion-pulse="off">Primary</button>
+        <button class="motion-btn motion-btn--secondary" type="button">Secondary</button>
+        <button class="motion-btn motion-btn--quiet" type="button">Quiet</button>
+      </div>
+    </section>
+
+    <section class="panel" id="states" aria-labelledby="states-title">
+      <h2 id="states-title">状態</h2>
+      <p>無効状態と、非同期処理中の二重操作防止を確認できます。</p>
+      <div class="actions" data-motion-group>
+        <button class="motion-btn motion-btn--primary" type="button" id="submit-demo" data-motion-pulse="off">送信する</button>
+        <button class="motion-btn motion-btn--primary" type="button" data-motion-pulse="off" disabled>無効なボタン</button>
+        <a class="motion-btn motion-btn--secondary" href="#states" aria-disabled="true">無効なリンク</a>
+      </div>
+      <p class="status" id="submit-status" aria-live="polite"></p>
+    </section>
+
+    <section class="panel" id="burst" aria-labelledby="burst-title">
+      <h2 id="burst-title">クリック演出（任意）</h2>
+      <p><code>data-motion-effect="burst"</code> を指定したボタンだけ、押した位置から火の粉が広がります。<code>data-motion-effect="fireworks"</code> では、押した位置から花火が打ち上がり画面いっぱいに開きます。キーボード操作ではボタン中央から広がります。</p>
+      <div class="actions" data-motion-group>
+        <button class="motion-btn motion-btn--primary" type="button" data-motion-effect="fireworks" data-motion-pulse="off">お祝いする</button>
+        <button class="motion-btn motion-btn--secondary" type="button" data-motion-effect="burst">もう一度</button>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    OSの「視差効果を減らす」設定が有効な場合、移動・点滅・パーティクルは停止します。
+  </footer>
+
+  <script>
+    (function () {
+      var button = document.getElementById('submit-demo');
+      var status = document.getElementById('submit-status');
+
+      button.addEventListener('click', async function () {
+        ButtonMotion.setLoading(button, true);
+        status.textContent = '送信しています…';
+        try {
+          await new Promise(function (resolve) { setTimeout(resolve, 1800); });
+          status.textContent = '送信が完了しました。';
+        } finally {
+          ButtonMotion.setLoading(button, false);
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
