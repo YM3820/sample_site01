@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#000000" />
+    <title>スペシャルページ</title>
+    <style>
+      *,
+      *::before,
+      *::after {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        min-height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #000;
+      }
+
+      body {
+        min-height: 100vh;
+        min-height: 100dvh;
+        font-family: system-ui, -apple-system, "Hiragino Sans", "Noto Sans JP", sans-serif;
+        -webkit-tap-highlight-color: transparent;
+        user-select: none;
+      }
+
+      .page {
+        position: relative;
+        width: 100%;
+        height: 100vh;
+        height: 100dvh;
+        overflow: hidden;
+        background: #000 url("img/top_01.png") center center / contain no-repeat;
+        cursor: pointer;
+        touch-action: manipulation;
+      }
+
+      .page:focus-visible {
+        outline: 4px solid #fff;
+        outline-offset: -4px;
+      }
+
+      .instruction {
+        position: absolute;
+        z-index: 1;
+        top: max(24px, env(safe-area-inset-top));
+        left: 50%;
+        width: max-content;
+        max-width: calc(100% - 32px);
+        margin: 0;
+        padding: 8px 16px;
+        transform: translateX(-50%);
+        border-radius: 999px;
+        background: rgb(0 0 0 / 58%);
+        color: #fff;
+        font-size: clamp(1rem, 4.2vw, 1.35rem);
+        font-weight: 800;
+        line-height: 1.5;
+        text-align: center;
+        text-shadow: 0 1px 4px #000;
+        pointer-events: none;
+      }
+
+      .burst-layer {
+        position: absolute;
+        inset: 0;
+        overflow: hidden;
+        pointer-events: none;
+      }
+
+      .particle {
+        position: absolute;
+        z-index: 2;
+        width: var(--size);
+        height: auto;
+        pointer-events: none;
+        will-change: transform, opacity;
+        filter: drop-shadow(0 0 8px rgb(255 255 255 / 45%));
+        transform: translate(-50%, -50%) scale(0.15) rotate(0deg);
+        animation: burst var(--duration) cubic-bezier(0.13, 0.72, 0.18, 1) forwards;
+      }
+
+      @keyframes burst {
+        0% {
+          opacity: 0;
+          transform: translate(-50%, -50%) scale(0.15) rotate(0deg);
+        }
+        10% {
+          opacity: 1;
+        }
+        72% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+          transform:
+            translate(
+              calc(-50% + var(--move-x)),
+              calc(-50% + var(--move-y) + var(--drop))
+            )
+            scale(var(--end-scale))
+            rotate(var(--rotate));
+        }
+      }
+
+      .sr-only {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        padding: 0;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+        border: 0;
+      }
+
+      @media (prefers-reduced-motion: reduce) {
+        .particle {
+          animation-duration: 300ms;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main
+      class="page"
+      id="click-area"
+      role="button"
+      tabindex="0"
+      aria-label="画面を10回押すと特設サイトへ移動します"
+    >
+      <p class="instruction">画像を10回高速クリックしてね！</p>
+      <div class="burst-layer" id="burst-layer" aria-hidden="true"></div>
+      <p class="sr-only" id="click-status" aria-live="polite">あと10回です</p>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var MAX_CLICKS = 10;
+        var REDIRECT_URL = "https://shibuya.lp-rakuen.com";
+        var particleImages = [
+          { src: "img/xl.png", size: [82, 128] },
+          { src: "img/l.png", size: [52, 82] },
+          { src: "img/m.png", size: [34, 58] },
+          { src: "img/s.png", size: [22, 38] }
+        ];
+
+        var clickArea = document.getElementById("click-area");
+        var burstLayer = document.getElementById("burst-layer");
+        var clickStatus = document.getElementById("click-status");
+        var clickCount = 0;
+        var redirecting = false;
+
+        // 初回操作時の表示遅れを抑えるため、花火画像を先読みする。
+        particleImages.forEach(function (item) {
+          var image = new Image();
+          image.src = item.src;
+        });
+
+        function randomBetween(min, max) {
+          return min + Math.random() * (max - min);
+        }
+
+        function createBurst(x, y) {
+          var particleCount = window.innerWidth < 600 ? 14 : 18;
+          var travel = Math.min(Math.max(window.innerWidth, window.innerHeight) * 0.36, 440);
+
+          for (var i = 0; i < particleCount; i += 1) {
+            var image = particleImages[i % particleImages.length];
+            var angle = (Math.PI * 2 * i) / particleCount + randomBetween(-0.16, 0.16);
+            var distance = travel * randomBetween(0.5, 1.08);
+            var particle = document.createElement("img");
+
+            particle.className = "particle";
+            particle.src = image.src;
+            particle.alt = "";
+            particle.draggable = false;
+            particle.style.left = x + "px";
+            particle.style.top = y + "px";
+            particle.style.setProperty("--size", randomBetween(image.size[0], image.size[1]) + "px");
+            particle.style.setProperty("--move-x", Math.cos(angle) * distance + "px");
+            particle.style.setProperty("--move-y", Math.sin(angle) * distance + "px");
+            particle.style.setProperty("--drop", randomBetween(20, 90) + "px");
+            particle.style.setProperty("--rotate", randomBetween(-540, 540) + "deg");
+            particle.style.setProperty("--end-scale", randomBetween(0.72, 1.18));
+            particle.style.setProperty("--duration", randomBetween(780, 1250) + "ms");
+            particle.style.animationDelay = randomBetween(0, 80) + "ms";
+
+            particle.addEventListener("animationend", function (event) {
+              event.currentTarget.remove();
+            });
+            burstLayer.appendChild(particle);
+          }
+        }
+
+        function activate(x, y) {
+          if (redirecting) return;
+
+          clickCount += 1;
+          createBurst(x, y);
+
+          var remaining = MAX_CLICKS - clickCount;
+          clickStatus.textContent = remaining > 0 ? "あと" + remaining + "回です" : "移動します";
+
+          if (clickCount >= MAX_CLICKS) {
+            redirecting = true;
+            window.setTimeout(function () {
+              window.location.href = REDIRECT_URL;
+            }, 850);
+          }
+        }
+
+        clickArea.addEventListener("click", function (event) {
+          activate(event.clientX, event.clientY);
+        });
+
+        clickArea.addEventListener("keydown", function (event) {
+          if (event.key !== "Enter" && event.key !== " ") return;
+          event.preventDefault();
+          var rect = clickArea.getBoundingClientRect();
+          activate(rect.left + rect.width / 2, rect.top + rect.height / 2);
+        });
+      })();
+    </script>
+  </body>
+</html>
