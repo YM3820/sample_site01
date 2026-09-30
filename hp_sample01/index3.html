@@ -2,7 +2,10 @@
 <html lang="ja">
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
     <meta name="theme-color" content="#000000" />
     <title>スペシャルページ</title>
     <link rel="stylesheet" href="css/style.css" />
@@ -24,13 +27,13 @@
       (function () {
         "use strict";
 
-        var MAX_CLICKS = 10;
+        var MAX_CLICKS = 5;
         var REDIRECT_URL = "https://shibuya.lp-rakuen.com";
         var particleImages = [
           { src: "img/xl.png", size: [82, 128] },
           { src: "img/l.png", size: [52, 82] },
           { src: "img/m.png", size: [34, 58] },
-          { src: "img/s.png", size: [22, 38] }
+          { src: "img/s.png", size: [22, 38] },
         ];
 
         var clickArea = document.getElementById("click-area");
@@ -51,11 +54,15 @@
 
         function createBurst(x, y) {
           var particleCount = window.innerWidth < 600 ? 14 : 18;
-          var travel = Math.min(Math.max(window.innerWidth, window.innerHeight) * 0.36, 440);
+          var travel = Math.min(
+            Math.max(window.innerWidth, window.innerHeight) * 0.36,
+            440,
+          );
 
           for (var i = 0; i < particleCount; i += 1) {
             var image = particleImages[i % particleImages.length];
-            var angle = (Math.PI * 2 * i) / particleCount + randomBetween(-0.16, 0.16);
+            var angle =
+              (Math.PI * 2 * i) / particleCount + randomBetween(-0.16, 0.16);
             var distance = travel * randomBetween(0.5, 1.08);
             var particle = document.createElement("img");
 
@@ -65,13 +72,31 @@
             particle.draggable = false;
             particle.style.left = x + "px";
             particle.style.top = y + "px";
-            particle.style.setProperty("--size", randomBetween(image.size[0], image.size[1]) + "px");
-            particle.style.setProperty("--move-x", Math.cos(angle) * distance + "px");
-            particle.style.setProperty("--move-y", Math.sin(angle) * distance + "px");
+            particle.style.setProperty(
+              "--size",
+              randomBetween(image.size[0], image.size[1]) + "px",
+            );
+            particle.style.setProperty(
+              "--move-x",
+              Math.cos(angle) * distance + "px",
+            );
+            particle.style.setProperty(
+              "--move-y",
+              Math.sin(angle) * distance + "px",
+            );
             particle.style.setProperty("--drop", randomBetween(20, 90) + "px");
-            particle.style.setProperty("--rotate", randomBetween(-540, 540) + "deg");
-            particle.style.setProperty("--end-scale", randomBetween(0.72, 1.18));
-            particle.style.setProperty("--duration", randomBetween(780, 1250) + "ms");
+            particle.style.setProperty(
+              "--rotate",
+              randomBetween(-540, 540) + "deg",
+            );
+            particle.style.setProperty(
+              "--end-scale",
+              randomBetween(0.72, 1.18),
+            );
+            particle.style.setProperty(
+              "--duration",
+              randomBetween(780, 1250) + "ms",
+            );
             particle.style.animationDelay = randomBetween(0, 80) + "ms";
 
             particle.addEventListener("animationend", function (event) {
@@ -88,7 +113,8 @@
           createBurst(x, y);
 
           var remaining = MAX_CLICKS - clickCount;
-          clickStatus.textContent = remaining > 0 ? "あと" + remaining + "回です" : "移動します";
+          clickStatus.textContent =
+            remaining > 0 ? "あと" + remaining + "回です" : "移動します";
 
           if (clickCount >= MAX_CLICKS) {
             redirecting = true;
