@@ -116,6 +116,15 @@ body {
   animation: finale-flash 2.6s ease-out forwards;
 }
 
+/* settings.php で shake / flash を false にした場合 */
+.page.is-finale.no-shake {
+  animation: none;
+}
+
+.page.is-finale.no-flash::after {
+  content: none;
+}
+
 .page.is-finale .instruction {
   opacity: 0;
   transition: opacity 200ms;
