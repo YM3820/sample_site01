@@ -16,11 +16,11 @@
       id="click-area"
       role="button"
       tabindex="0"
-      aria-label="画面を10回押すと特設サイトへ移動します"
+      aria-label="画面を5回押すと特設サイトへ移動します"
     >
-      <p class="instruction">画像を10回高速クリックしてね！</p>
+      <p class="instruction">画像を5回高速クリックしてね！</p>
       <div class="burst-layer" id="burst-layer" aria-hidden="true"></div>
-      <p class="sr-only" id="click-status" aria-live="polite">あと10回です</p>
+      <p class="sr-only" id="click-status" aria-live="polite">あと5回です</p>
     </main>
 
     <script>
@@ -52,12 +52,19 @@
           return min + Math.random() * (max - min);
         }
 
-        function createBurst(x, y) {
-          var particleCount = window.innerWidth < 600 ? 14 : 18;
-          var travel = Math.min(
-            Math.max(window.innerWidth, window.innerHeight) * 0.36,
-            440,
+        function createBurst(x, y, options) {
+          options = options || {};
+          var countScale = options.countScale || 1;
+          var travelScale = options.travelScale || 1;
+          var sizeScale = options.sizeScale || 1;
+          var particleCount = Math.round(
+            (window.innerWidth < 600 ? 14 : 18) * countScale,
           );
+          var travel =
+            Math.min(
+              Math.max(window.innerWidth, window.innerHeight) * 0.36,
+              440,
+            ) * travelScale;
 
           for (var i = 0; i < particleCount; i += 1) {
             var image = particleImages[i % particleImages.length];
@@ -74,7 +81,7 @@
             particle.style.top = y + "px";
             particle.style.setProperty(
               "--size",
-              randomBetween(image.size[0], image.size[1]) + "px",
+              randomBetween(image.size[0], image.size[1]) * sizeScale + "px",
             );
             particle.style.setProperty(
               "--move-x",
@@ -106,11 +113,89 @@
           }
         }
 
+        // 上から降り注ぐキャラクター（フィナーレ用）。
+        function createRain(count) {
+          var width = window.innerWidth;
+          var height = window.innerHeight;
+
+          for (var i = 0; i < count; i += 1) {
+            var image = particleImages[i % particleImages.length];
+            var particle = document.createElement("img");
+
+            particle.className = "particle-rain";
+            particle.src = image.src;
+            particle.alt = "";
+            particle.draggable = false;
+            particle.style.left = randomBetween(-5, 100) + "%";
+            particle.style.setProperty(
+              "--size",
+              randomBetween(image.size[0], image.size[1]) * 1.2 + "px",
+            );
+            particle.style.setProperty(
+              "--fall",
+              height + 260 + "px",
+            );
+            particle.style.setProperty(
+              "--sway",
+              randomBetween(-0.25, 0.25) * width + "px",
+            );
+            particle.style.setProperty(
+              "--rotate",
+              randomBetween(-900, 900) + "deg",
+            );
+            particle.style.setProperty(
+              "--duration",
+              randomBetween(1100, 1900) + "ms",
+            );
+            particle.style.animationDelay = randomBetween(0, 1400) + "ms";
+
+            particle.addEventListener("animationend", function (event) {
+              event.currentTarget.remove();
+            });
+            burstLayer.appendChild(particle);
+          }
+        }
+
+        // 5回目：画面全体にキャラクターを激しくばらまく。
+        function finale(x, y) {
+          var width = window.innerWidth;
+          var height = window.innerHeight;
+          var isSmall = width < 600;
+
+          clickArea.classList.add("is-finale");
+
+          // 中心から特大の爆発。
+          createBurst(x, y, { countScale: 3, travelScale: 2.6, sizeScale: 1.4 });
+          createBurst(width / 2, height / 2, {
+            countScale: 2.5,
+            travelScale: 3,
+            sizeScale: 1.6,
+          });
+
+          // 画面のあちこちで連続爆発。
+          var waves = isSmall ? 14 : 20;
+          for (var i = 0; i < waves; i += 1) {
+            window.setTimeout(function () {
+              createBurst(
+                randomBetween(0.05, 0.95) * width,
+                randomBetween(0.05, 0.95) * height,
+                {
+                  countScale: randomBetween(0.9, 1.4),
+                  travelScale: randomBetween(1.2, 2),
+                  sizeScale: randomBetween(1, 1.5),
+                },
+              );
+            }, 90 + i * 85);
+          }
+
+          // 上からキャラクターの雨。
+          createRain(isSmall ? 50 : 80);
+        }
+
         function activate(x, y) {
           if (redirecting) return;
 
           clickCount += 1;
-          createBurst(x, y);
 
           var remaining = MAX_CLICKS - clickCount;
           clickStatus.textContent =
@@ -118,9 +203,12 @@
 
           if (clickCount >= MAX_CLICKS) {
             redirecting = true;
+            finale(x, y);
             window.setTimeout(function () {
               window.location.href = REDIRECT_URL;
-            }, 850);
+            }, 2800);
+          } else {
+            createBurst(x, y);
           }
         }
 
@@ -139,6 +227,7 @@
         window.addEventListener("pageshow", function () {
           clickCount = 0;
           redirecting = false;
+          clickArea.classList.remove("is-finale");
           clickStatus.textContent = "あと" + MAX_CLICKS + "回です";
           burstLayer.replaceChildren();
         });

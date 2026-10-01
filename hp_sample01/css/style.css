@@ -100,6 +100,69 @@ body {
   }
 }
 
+/* フィナーレ：画面シェイク＋フラッシュ */
+.page.is-finale {
+  animation: finale-shake 90ms linear 14;
+}
+
+.page.is-finale::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(circle, #fff 0%, rgb(255 230 120 / 70%) 40%, rgb(255 80 160 / 0%) 75%);
+  mix-blend-mode: screen;
+  animation: finale-flash 2.6s ease-out forwards;
+}
+
+.page.is-finale .instruction {
+  opacity: 0;
+  transition: opacity 200ms;
+}
+
+@keyframes finale-shake {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(-10px, 6px) rotate(-0.6deg); }
+  50% { transform: translate(8px, -8px) rotate(0.6deg); }
+  75% { transform: translate(-6px, -4px) rotate(-0.4deg); }
+  100% { transform: translate(0, 0); }
+}
+
+@keyframes finale-flash {
+  0% { opacity: 0; }
+  6% { opacity: 1; }
+  20% { opacity: 0.2; }
+  30% { opacity: 0.8; }
+  45% { opacity: 0.1; }
+  55% { opacity: 0.6; }
+  100% { opacity: 0; }
+}
+
+.particle-rain {
+  position: absolute;
+  z-index: 2;
+  top: -140px;
+  width: var(--size);
+  height: auto;
+  pointer-events: none;
+  opacity: 0;
+  will-change: transform, opacity;
+  filter: drop-shadow(0 0 10px rgb(255 255 255 / 55%));
+  animation: rain var(--duration) cubic-bezier(0.45, 0, 0.8, 0.6) forwards;
+}
+
+@keyframes rain {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) rotate(0deg);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(var(--sway), var(--fall)) rotate(var(--rotate));
+  }
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -115,5 +178,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .particle {
     animation-duration: 300ms;
+  }
+
+  .page.is-finale {
+    animation: none;
   }
 }
